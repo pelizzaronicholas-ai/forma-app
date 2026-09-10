@@ -1,6 +1,6 @@
 // store.js — persistenza locale. localStorage per ora (dati piccoli, sincroni);
 // interfaccia async per poter passare a IndexedDB/Supabase senza toccare l'app.
-const PREFIX = 'nutricoach:';
+const PREFIX = 'forma:';
 
 export const store = {
   get(key, fallback = null) {

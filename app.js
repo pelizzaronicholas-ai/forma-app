@@ -1,4 +1,4 @@
-// app.js — NutriCoach PWA. Router a tab + onboarding. Nessun framework.
+// app.js — FORMA PWA. Router a tab + onboarding. Nessun framework.
 import { store } from './store.js';
 import { api, apiConfigured } from './api.js';
 import { ACTIVITY_FACTORS, GOALS, PACE, computePlan, bmi, adjustTarget } from './engine/nutrition.js';
@@ -116,7 +116,7 @@ function renderOnboarding() {
 
   function stepIntro() {
     return h`<div class="card neon"><h1>Conosciamoci<em style="color:#0a0a0b">.</em></h1><p>Qualche domanda per calcolare il tuo fabbisogno e costruire piano alimentare e allenamenti su misura. Ci vogliono 2 minuti.</p></div>
-    <div class="card warn small">NutriCoach è uno strumento di supporto, non sostituisce medico, dietista o nutrizionista. In caso di patologie, gravidanza o disturbi alimentari rivolgiti a un professionista prima di seguire qualsiasi piano.</div>${nav()}`;
+    <div class="card warn small">FORMA è uno strumento di supporto, non sostituisce medico, dietista o nutrizionista. In caso di patologie, gravidanza o disturbi alimentari rivolgiti a un professionista prima di seguire qualsiasi piano.</div>${nav()}`;
   }
   function stepBody() {
     return h`<h2>Dati fisici</h2>
@@ -420,16 +420,16 @@ function renderProfile() {
   <button class="btn secondary" id="redo">Rifai il questionario</button></div>
   <div class="card"><h3>Backend AI <span class="tag ${apiConfigured() ? 'llm' : ''}">${apiConfigured() ? 'attivo' : 'non configurato'}</span></h3>
   <p class="muted small">Senza backend i piani sono generati a regole (offline). Con il backend, piano, sostituzioni e ricette sono generati dall'AI con i tuoi vincoli.</p>
-  <div class="field"><label>URL Worker</label><input id="apiBase" value="${esc(s.apiBase ?? '')}" placeholder="https://nutricoach-api.tuonome.workers.dev"></div>
+  <div class="field"><label>URL Worker</label><input id="apiBase" value="${esc(s.apiBase ?? '')}" placeholder="https://forma-api.tuonome.workers.dev"></div>
   <div class="field"><label>Token</label><input id="token" value="${esc(s.token ?? '')}" placeholder="JWT utente o DEV_TOKEN"></div>
   <button class="btn secondary sm" id="api-save">Salva</button></div>
   <div class="card"><h3>Dati</h3><div class="grid2"><button class="btn secondary sm" id="export">Esporta JSON</button><button class="btn danger sm" id="reset">Cancella tutto</button></div></div>
-  <p class="muted small center">NutriCoach v0.1 · Strumento educativo, non è un dispositivo medico né sostituisce un professionista sanitario.</p>`;
+  <p class="muted small center">FORMA v0.2 · Strumento educativo, non è un dispositivo medico né sostituisce un professionista sanitario.</p>`;
   $('#redo').onclick = () => { tabs.hidden = true; renderOnboarding(); };
   $('#api-save').onclick = () => { store.set('settings', { apiBase: $('#apiBase').value.trim(), token: $('#token').value.trim() }); toast('Salvato'); renderProfile(); };
   $('#export').onclick = () => {
     const blob = new Blob([JSON.stringify({ profile: p, numbers: n, mealPlan: state.mealPlan, program: state.program, weights: state.weights }, null, 2)], { type: 'application/json' });
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'nutricoach-export.json' }); a.click();
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'forma-export.json' }); a.click();
   };
   $('#reset').onclick = () => { if (confirm('Cancellare tutti i dati locali?')) { store.clear(); location.reload(); } };
 }

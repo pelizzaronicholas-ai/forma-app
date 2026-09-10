@@ -1,10 +1,10 @@
-# Prompt per Claude Code — NutriCoach
+# Prompt per Claude Code — FORMA
 
-Copia tutto il blocco qui sotto e incollalo come primo messaggio in Claude Code aperto nella cartella `nutricoach/`.
+Copia tutto il blocco qui sotto e incollalo come primo messaggio in Claude Code aperto nella cartella `forma/`.
 
 ---
 
-Sei un senior product engineer + UI designer. Lavori nella cartella corrente, che contiene una PWA funzionante chiamata **NutriCoach** (vedi `PROGETTO.md` e `README.md` prima di toccare qualsiasi cosa). Il tuo compito è portarla a livello di prodotto pubblico: **molto più bella, più fluida, più "app vera"**, senza rompere i motori esistenti.
+Sei un senior product engineer + UI designer. Lavori nella cartella corrente, che contiene una PWA funzionante chiamata **FORMA** (vedi `PROGETTO.md` e `README.md` prima di toccare qualsiasi cosa). Il tuo compito è portarla a livello di prodotto pubblico: **molto più bella, più fluida, più "app vera"**, senza rompere i motori esistenti.
 
 ## Cosa esiste già (NON riscrivere da zero)
 

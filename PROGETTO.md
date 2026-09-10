@@ -1,4 +1,6 @@
-# NutriCoach — documento di progetto
+# FORMA — documento di progetto
+
+> Nome scelto: **FORMA** (in forma / dare forma). Logo: `branding/forma.svg`. Palette: nero `#0a0a0b`, giallo fluo `#e8ff00`, lime `#9dff1c`.
 
 PWA che calcola il fabbisogno calorico, genera un piano alimentare settimanale personalizzato (3 o 5 pasti, allergie ed esclusioni), un programma di allenamento in base a giorni/minuti/attrezzatura, le preparazioni dei pasti e la lista della spesa settimanale. Pensata come prodotto pubblico.
 
@@ -13,7 +15,7 @@ Senza backend l'app funziona comunque con un generatore a regole (`engine/foods.
 ## Struttura
 
 ```
-nutricoach/
+forma/
 ├── index.html, ui.css, app.js      PWA (vanilla JS, ES modules, nessun build step)
 ├── store.js                        persistenza locale (localStorage, interfaccia sostituibile)
 ├── api.js                          client verso il Worker con fallback a regole

@@ -1,4 +1,4 @@
-/* ui.css — NutriCoach. Tema unico: nero / grigio con accenti giallo fluo e verde lime. */
+/* ui.css — FORMA. Tema unico: nero / grigio con accenti giallo fluo e verde lime. */
 :root {
   --bg: #0a0a0b; --bg-2: #121214; --card: #17181b; --card-2: #1f2024; --line: #2a2c31; --line-2: #35383f;
   --text: #f4f4f2; --muted: #8b8f98; --dim: #5c606a;
@@ -38,8 +38,8 @@ a { color: var(--lime); }
   backdrop-filter: blur(16px); border-bottom: 1px solid var(--line);
 }
 .brand { font-weight: 900; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-.brand .logo { width: 26px; height: 26px; border-radius: 8px; background: var(--grad); display: inline-block; box-shadow: 0 0 18px rgba(232,255,0,.5); position: relative; }
-.brand .logo::after { content: ''; position: absolute; inset: 6px; border-radius: 4px; background: var(--bg); clip-path: polygon(0 100%, 35% 0, 60% 70%, 80% 20%, 100% 100%, 75% 100%, 55% 60%, 40% 100%); }
+.brand .logo { width: 26px; height: 26px; border-radius: 8px; display: inline-block; box-shadow: 0 0 18px rgba(232,255,0,.45); }
+.brand .dot { color: var(--neon); }
 
 .view { padding: 18px 16px 24px; max-width: 720px; margin: 0 auto; }
 

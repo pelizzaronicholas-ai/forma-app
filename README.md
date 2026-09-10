@@ -1,4 +1,4 @@
-# NutriCoach
+# FORMA
 
 PWA: fabbisogno calorico, piano alimentare settimanale, allenamenti, preparazioni e lista della spesa. Vedi `PROGETTO.md` per architettura e roadmap.
 

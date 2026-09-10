@@ -1,1 +1,1 @@
-{"name":"nutricoach","version":"0.1.0","type":"module","private":true,"scripts":{"test":"node --test test/*.test.js","serve":"npx serve app -l 8080"}}
+{"name":"forma","version":"0.1.0","type":"module","private":true,"scripts":{"test":"node --test test/*.test.js","serve":"npx serve app -l 8080"}}
