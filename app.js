@@ -40,9 +40,22 @@ function toast(msg, ms = 2500) {
   clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, ms);
 }
 function modal(html) {
-  const m = $('#modal'); $('#modal-body').innerHTML = html; m.showModal();
-  m.addEventListener('click', e => { if (e.target === m) m.close(); }, { once: true });
+  const m = $('#modal'); $('#modal-body').innerHTML = html; if (!m.open) m.showModal();
+  m.onclick = e => { if (e.target === m) m.close(); };
+  // swipe verso il basso sulla maniglia / intestazione chiude lo sheet
+  let y0 = null;
+  m.ontouchstart = e => { y0 = $('#modal-body').scrollTop === 0 ? e.touches[0].clientY : null; };
+  m.ontouchmove = e => { if (y0 != null && e.touches[0].clientY - y0 > 70) { y0 = null; m.close(); } };
   return m;
+}
+/** Conferma come bottom sheet (niente confirm() nativo: su iOS è brutto e blocca). */
+function ask(title, text, okLabel = 'Conferma', danger = false) {
+  return new Promise(res => {
+    const m = modal(h`<h2>${esc(title)}</h2><p class="muted">${esc(text)}</p><div class="grid2" style="margin-top:14px"><button class="btn secondary" data-no>Annulla</button><button class="btn ${danger ? 'danger' : ''}" data-ok>${esc(okLabel)}</button></div>`);
+    $('[data-ok]', m).onclick = () => { m.close(); res(true); };
+    $('[data-no]', m).onclick = () => { m.close(); res(false); };
+    m.addEventListener('close', () => res(false), { once: true });
+  });
 }
 function busy(msg) {
   return modal(h`<div class="center"><span class="spinner"></span><p style="margin-top:12px">${esc(msg)}</p></div>`);
@@ -191,36 +204,46 @@ async function generateMealPlan() {
   state.recipes = {}; save('recipes');
 }
 
-// Sostituzione locale a regole: stesso slot/categoria, riscalo il pasto al target.
-function substituteLocal(meal, itemName, target) {
+// Alternative locali a regole: stessa categoria e slot, grammi equivalenti in kcal.
+function localAlternatives(meal, itemName, max = 4) {
   const foods = availableFoods(prefsOf(state.profile));
   const item = meal.items.find(i => i.name === itemName);
   const inMeal = new Set(meal.items.map(i => i.name));
-  const cands = foods.filter(f => f.cat === item.category && f.slots.includes(meal.slot) && !inMeal.has(f.name));
-  if (!cands.length) return null;
-  const alt = cands[Math.floor(Math.random() * cands.length)];
-  const grams = Math.max(5, Math.round((item.kcal / alt.kcal * 100) / 5) * 5);
-  const k = grams / 100;
-  const newItem = { name: alt.name, category: alt.cat, grams, kcal: Math.round(alt.kcal * k), protein: +(alt.p * k).toFixed(1), carbs: +(alt.c * k).toFixed(1), fat: +(alt.f * k).toFixed(1) };
-  const items = meal.items.map(i => i === item ? newItem : i);
-  const title = items.filter(i => i.category !== 'fat').map(i => i.name).join(', ');
+  return foods.filter(f => f.cat === item.category && f.slots.includes(meal.slot) && !inMeal.has(f.name))
+    .slice(0, max).map(alt => {
+      const grams = Math.max(5, Math.round((item.kcal / alt.kcal * 100) / 5) * 5);
+      const k = grams / 100;
+      return { name: alt.name, category: alt.cat, grams, kcal: Math.round(alt.kcal * k), protein: +(alt.p * k).toFixed(1), carbs: +(alt.c * k).toFixed(1), fat: +(alt.f * k).toFixed(1) };
+    });
+}
+
+function applyAlternative(meal, itemName, newItem, target) {
+  const items = meal.items.map(i => i.name === itemName ? newItem : i);
+  const title = items.filter(i => i.category !== 'fat' && i.category !== 'veg').map(i => i.name).join(', ') || items[0].name;
   return scaleMealToTarget({ ...meal, title, items }, target.kcal);
 }
 
-async function substitute(dayIdx, mealIdx, itemName) {
+/** Sheet "Sostituisci con…": alternative a regole + opzione AI se il backend è configurato. */
+function substitute(dayIdx, mealIdx, itemName) {
   const meal = state.mealPlan.days[dayIdx].meals[mealIdx];
   const target = state.numbers.meals.find(m => m.id === meal.slot);
-  let out = null;
-  if (apiConfigured()) {
-    const m = busy('Cerco un\'alternativa equivalente…');
-    try { out = (await api.substitute(meal, target, itemName, prefsOf(state.profile))).meal; }
-    catch (e) { toast('Backend: ' + e.message); }
-    finally { m.close(); }
-  }
-  if (!out) out = substituteLocal(meal, itemName, target);
-  if (!out) return toast('Nessuna alternativa disponibile con le tue esclusioni');
-  state.mealPlan.days[dayIdx].meals[mealIdx] = out; save('mealPlan');
-  renderPlan();
+  const item = meal.items.find(i => i.name === itemName);
+  const alts = localAlternatives(meal, itemName);
+  const commit = out => { state.mealPlan.days[dayIdx].meals[mealIdx] = out; save('mealPlan'); renderPlan(); toast('Sostituito'); };
+  const m = modal(h`<div class="slot" style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)">Sostituisci</div>
+    <h2>${foodIcon(item.name, item.category)} ${esc(item.name)} <span class="muted">${item.grams} g</span></h2>
+    <p class="muted small">Alternative con le stesse calorie. Il pasto viene riscalato al target.</p>
+    <div class="sheet-actions">
+      ${alts.map((a, i) => h`<button class="alt" data-alt="${i}"><span class="em">${foodIcon(a.name, a.category)}</span><span><b>${esc(a.name)}</b><span class="muted">${a.grams} g · ${a.kcal} kcal · P ${Math.round(a.protein)} g</span></span></button>`).join('')}
+      ${apiConfigured() ? '<button class="alt" data-ai><span class="em">✨</span><span><b>Chiedi all\'AI</b><span class="muted">Alternativa scelta in base a gusti e allergie</span></span></button>' : ''}
+      ${!alts.length && !apiConfigured() ? '<p class="muted">Nessuna alternativa disponibile con le tue esclusioni.</p>' : ''}
+    </div>`);
+  m.querySelectorAll('[data-alt]').forEach(b => b.onclick = () => { m.close(); commit(applyAlternative(meal, itemName, alts[+b.dataset.alt], target)); });
+  const ai = $('[data-ai]', m); if (ai) ai.onclick = async () => {
+    m.close(); const w = busy('Cerco un\'alternativa equivalente…');
+    try { const r = await api.substitute(meal, target, itemName, prefsOf(state.profile)); commit(r.meal); }
+    catch (e) { toast('Backend: ' + e.message); } finally { w.close(); }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -300,9 +323,9 @@ function renderPlan() {
   ${plan.notes ? h`<p class="muted small">${esc(plan.notes)}</p>` : ''}
   <button class="btn secondary" id="regen">Rigenera tutta la settimana</button>`;
   view.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { state.planDay = +b.dataset.day; renderPlan(); });
-  view.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { if (confirm(`Sostituire "${b.dataset.item}" con un'alternativa equivalente?`)) substitute(state.planDay, +b.dataset.sub, b.dataset.item); });
+  view.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => substitute(state.planDay, +b.dataset.sub, b.dataset.item));
   view.querySelectorAll('[data-recipe]').forEach(b => b.onclick = () => recipeFor(+b.dataset.recipe));
-  $('#regen').onclick = async () => { if (confirm('Rigenero il piano della settimana? Le sostituzioni fatte andranno perse.')) { await generateMealPlan(); renderPlan(); } };
+  $('#regen').onclick = async () => { if (await ask('Rigenerare la settimana?', 'Le sostituzioni fatte finora andranno perse.', 'Rigenera')) { await generateMealPlan(); renderPlan(); } };
 }
 
 function renderRecipe(r) {
@@ -431,10 +454,32 @@ function renderProfile() {
     const blob = new Blob([JSON.stringify({ profile: p, numbers: n, mealPlan: state.mealPlan, program: state.program, weights: state.weights }, null, 2)], { type: 'application/json' });
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'forma-export.json' }); a.click();
   };
-  $('#reset').onclick = () => { if (confirm('Cancellare tutti i dati locali?')) { store.clear(); location.reload(); } };
+  $('#reset').onclick = async () => { if (await ask('Cancellare tutto?', 'Profilo, piano, allenamenti e pesate verranno eliminati da questo dispositivo.', 'Cancella', true)) { store.clear(); location.reload(); } };
 }
 
 // ---------------------------------------------------------------------------
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// --- PWA: service worker con aggiornamento silenzioso + banner "installa"
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      nw?.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) toast('Aggiornamento pronto: riapri l\'app per applicarlo', 4000); });
+    });
+  }).catch(() => {});
+}
+const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let deferredInstall = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; showInstall(); });
+function showInstall() {
+  if (isStandalone || store.get('installDismissed') || !state.profile) return;
+  const el = $('#install'); el.hidden = false;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  $('#install-btn').onclick = async () => {
+    if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; el.hidden = true; }
+    else modal(h`<h2>Installa FORMA</h2><ol class="steps"><li>Tocca <b>${isIOS ? 'Condividi' : 'il menu ⋮'}</b> in ${isIOS ? 'basso' : 'alto a destra'}</li><li>Scegli <b>Aggiungi alla schermata Home</b></li><li>Conferma con <b>Aggiungi</b></li></ol><button class="btn secondary" onclick="this.closest('dialog').close()">Ok</button>`);
+  };
+  $('#install-x').onclick = () => { el.hidden = true; store.set('installDismissed', true); };
+}
 boot();
+if (state.profile && /iphone|ipad|ipod|android/i.test(navigator.userAgent)) setTimeout(showInstall, 1500);

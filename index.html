@@ -2,14 +2,24 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f766e">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FORMA">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="Fabbisogno calorico, piano alimentare, allenamenti e lista della spesa su misura.">
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="engine/nutrition.js">
+<link rel="modulepreload" href="engine/foods.js">
+<link rel="modulepreload" href="engine/moves.js">
 <title>FORMA</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 <link rel="stylesheet" href="ui.css">
 </head>
 <body>
@@ -29,7 +39,8 @@
 </nav>
 
 <div id="toast" class="toast" hidden></div>
-<dialog id="modal" class="modal"><div id="modal-body"></div></dialog>
+<dialog id="modal" class="modal"><div class="grip"></div><div id="modal-body"></div></dialog>
+<div id="install" class="install" hidden><span>Aggiungi FORMA alla schermata Home per usarla come app</span><button class="btn sm" id="install-btn">Installa</button><button class="x" id="install-x" aria-label="Chiudi">×</button></div>
 
 <script type="module" src="app.js"></script>
 </body>
