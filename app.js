@@ -6,6 +6,8 @@ import { EQUIPMENT, LEVELS, EXERCISES, buildProgram, substituteExercise, session
 import { generateRulePlan, availableFoods, composeMeal } from './engine/foods.js';
 import { validatePlan, scaleMealToTarget, mealTotals, findAllergenViolations, ALLERGEN_KEYWORDS } from './engine/schemas.js';
 import { buildShoppingList } from './engine/shopping.js';
+import { foodIcon, SLOT_ICON } from './engine/foodIcons.js';
+import { exerciseSVG, exerciseInfo } from './engine/moves.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const view = $('#view');
@@ -113,7 +115,7 @@ function renderOnboarding() {
   const nav = (last = false) => h`<div class="grid2" style="margin-top:18px">${step > 0 ? '<button class="btn secondary" data-prev>Indietro</button>' : '<span></span>'}${last ? '<button class="btn" data-finish>Crea il mio piano</button>' : '<button class="btn" data-next>Avanti</button>'}</div>`;
 
   function stepIntro() {
-    return h`<div class="card accent"><h1>Conosciamoci</h1><p>Qualche domanda per calcolare il tuo fabbisogno e costruire piano alimentare e allenamenti su misura. Ci vogliono 2 minuti.</p></div>
+    return h`<div class="card neon"><h1>Conosciamoci<em style="color:#0a0a0b">.</em></h1><p>Qualche domanda per calcolare il tuo fabbisogno e costruire piano alimentare e allenamenti su misura. Ci vogliono 2 minuti.</p></div>
     <div class="card warn small">NutriCoach è uno strumento di supporto, non sostituisce medico, dietista o nutrizionista. In caso di patologie, gravidanza o disturbi alimentari rivolgiti a un professionista prima di seguire qualsiasi piano.</div>${nav()}`;
   }
   function stepBody() {
@@ -150,8 +152,8 @@ function renderOnboarding() {
   function stepSummary() {
     const n = computePlan(p);
     const b = bmi(p);
-    return h`<h2>Il tuo fabbisogno</h2>
-    <div class="card accent center"><div class="muted">Target giornaliero</div><div class="big">${n.target}</div><div class="muted">kcal / giorno</div></div>
+    return h`<h1>Il tuo <em>fabbisogno</em></h1>
+    <div class="card accent center"><div class="muted">Target giornaliero</div><div class="big neon-text">${n.target}</div><div class="muted">kcal / giorno</div></div>
     <div class="card"><div class="grid3"><div class="kpi"><div class="v">${n.bmr}</div><div class="l">Metabolismo basale</div></div><div class="kpi"><div class="v">${n.tdee}</div><div class="l">Dispendio totale</div></div><div class="kpi"><div class="v">${n.expectedWeeklyChangeKg > 0 ? '+' : ''}${n.expectedWeeklyChangeKg}</div><div class="l">kg / settimana attesi</div></div></div></div>
     <div class="card"><h3>Macronutrienti</h3>${macroBar(n.macros.protein, n.macros.carbs, n.macros.fat)}<p class="muted small" style="margin-top:8px">Fibre ≥ ${n.macros.fiberTarget} g · Acqua ≈ ${(n.macros.waterMl / 1000).toFixed(1)} L · BMI ${b.value} (${b.class})</p></div>
     ${n.warnings.map(w => h`<div class="card warn">${esc(w)}</div>`).join('')}
@@ -231,13 +233,15 @@ function renderToday() {
   const session = sessionIdx >= 0 ? state.program.sessions[sessionIdx] : null;
   const lastW = state.weights.at(-1);
   view.innerHTML = h`
-  <h1>${DAYS[state.planDay]}, ciao</h1>
-  <div class="card accent"><div class="row"><div><div class="muted">Target di oggi</div><div class="big">${n.target}<span style="font-size:16px;font-weight:500"> kcal</span></div></div>
-  <div class="kpi"><div class="v">${p.weightKg} kg</div><div class="l">${lastW ? 'ultima pesata' : 'peso iniziale'}</div></div></div>${macroBar(n.macros.protein, n.macros.carbs, n.macros.fat)}</div>
+  <h1>${DAYS[state.planDay]}<em>.</em> <span class="muted" style="font-size:14px;text-transform:none;letter-spacing:0;font-weight:500">${GOALS[p.goal].label}</span></h1>
+  <div class="stripe"></div>
+  <div class="card accent"><div class="row"><div><div class="muted">Target di oggi</div><div class="big neon-text">${n.target}</div><div class="muted">kcal</div></div>
+  <div class="kpi"><div class="v">${(lastW?.kg ?? p.weightKg)} <span class="muted">kg</span></div><div class="l">${lastW ? 'ultima pesata' : 'peso iniziale'}</div></div></div>${macroBar(n.macros.protein, n.macros.carbs, n.macros.fat)}</div>
   ${day ? h`<div class="card"><div class="row"><h2>Pasti di oggi</h2><button class="btn ghost sm" data-go="plan">Piano completo →</button></div>
-    ${day.meals.map(m => h`<div class="meal"><div class="row"><div><b>${esc(state.numbers.meals.find(x => x.id === m.slot)?.label)}</b><div class="muted small">${esc(m.title)}</div></div><div class="muted small" style="white-space:nowrap">${mealTotals(m).kcal} kcal</div></div></div>`).join('')}</div>` : ''}
+    ${day.meals.map(m => h`<div class="meal"><div class="row"><div><div class="slot">${SLOT_ICON[m.slot] ?? ''} ${esc(state.numbers.meals.find(x => x.id === m.slot)?.label)}</div><div class="title">${esc(m.title)}</div></div><div class="scheme" style="color:var(--neon);font-weight:800;white-space:nowrap">${mealTotals(m).kcal} kcal</div></div>
+    <div style="font-size:28px;margin-top:6px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))">${m.items.map(i => foodIcon(i.name, i.category)).join(' ')}</div></div>`).join('')}</div>` : ''}
   <div class="card"><div class="row"><h2>Allenamento</h2><button class="btn ghost sm" data-go="training">Programma →</button></div>
-    ${session ? h`<p><b>${esc(session.label)}</b> · ${session.exercises.length} esercizi · ~${state.program.minutesPerSession} min · ~${sessionKcal({ weightKg: p.weightKg, minutesPerSession: state.program.minutesPerSession })} kcal</p><p class="muted small">${session.exercises.map(e => esc(e.name)).join(' · ')}</p>` : '<p class="muted">Oggi riposo. Cammina 30 minuti se puoi.</p>'}</div>
+    ${session ? h`<div class="row" style="align-items:center"><div class="thumb" style="width:72px;height:72px;border-radius:14px;background:var(--bg-2);border:1px solid var(--line-2);flex:0 0 auto">${exerciseSVG(session.exercises[0].id)}</div><div><b>${esc(session.label)}</b><div class="muted small">${session.exercises.length} esercizi · ~${state.program.minutesPerSession} min · ~${sessionKcal({ weightKg: p.weightKg, minutesPerSession: state.program.minutesPerSession })} kcal</div><div class="muted small">${session.exercises.map(e => esc(e.name)).join(' · ')}</div></div></div>` : '<p class="muted">Oggi riposo. Cammina 30 minuti se puoi.</p>'}</div>
   <div class="card"><h2>Pesata</h2><p class="muted small">Pesati al mattino, a digiuno, 2-3 volte a settimana. Ogni 2 settimane ricalcolo il target in base ai risultati reali.</p>
     <div class="row"><input type="number" inputmode="decimal" step="0.1" id="w-in" placeholder="kg" value="${lastW?.kg ?? p.weightKg}"><button class="btn sm" id="w-add">Registra</button></div>
     ${state.weights.length ? h`<p class="muted small" style="margin-top:10px">${state.weights.slice(-6).map(w => `${w.date.slice(5)}: ${w.kg}`).join(' · ')}</p>` : ''}
@@ -283,26 +287,26 @@ function renderPlan() {
   const day = plan.days[state.planDay];
   const totals = day.meals.reduce((a, m) => { const t = mealTotals(m); a.kcal += t.kcal; a.p += t.protein; a.c += t.carbs; a.f += t.fat; return a; }, { kcal: 0, p: 0, c: 0, f: 0 });
   view.innerHTML = h`
-  <div class="row"><h1>Piano alimentare</h1><span class="tag ${plan.source === 'llm' ? 'llm' : ''}">${plan.source === 'llm' ? 'AI' : 'regole'}</span></div>
+  <div class="row"><h1>Piano<em>.</em></h1><span class="tag ${plan.source === 'llm' ? 'llm' : ''}">${plan.source === 'llm' ? 'AI' : 'regole'}</span></div>
   <div class="daypick">${DAYS.map((d, i) => h`<button class="${i === state.planDay ? 'on' : ''}" data-day="${i}">${d}</button>`).join('')}</div>
-  <div class="card"><div class="row"><b>${Math.round(totals.kcal)} kcal</b><span class="muted small">target ${n.target}</span></div>${macroBar(totals.p, totals.c, totals.f)}</div>
+  <div class="card accent"><div class="row"><div><span class="big neon-text" style="font-size:34px">${Math.round(totals.kcal)}</span> <span class="muted">kcal</span></div><span class="muted small">target ${n.target}</span></div>${macroBar(totals.p, totals.c, totals.f)}</div>
   <div class="card">${day.meals.map((m, mi) => {
     const t = mealTotals(m); const tg = n.meals.find(x => x.id === m.slot);
-    return h`<div class="meal"><div class="row"><div><b>${esc(tg?.label)}</b> <span class="muted small">${Math.round(t.kcal)} kcal · P ${Math.round(t.protein)}</span><div class="muted small">${esc(m.title)}</div></div>
-      <button class="btn ghost sm" data-recipe="${mi}">Preparazione</button></div>
-      <ul>${m.items.map(i => h`<li><span>${esc(i.name)}${i.note ? h` <span class="muted small">(${esc(i.note)})</span>` : ''}</span><span class="g">${i.grams} g <button data-sub="${mi}" data-item="${esc(i.name)}" title="Sostituisci">⇄</button></span></li>`).join('')}</ul>
+    return h`<div class="meal"><div class="row"><div><div class="slot">${SLOT_ICON[m.slot] ?? ''} ${esc(tg?.label)} <span class="muted small" style="text-transform:none;letter-spacing:0;font-weight:500">· ${Math.round(t.kcal)} kcal · P ${Math.round(t.protein)} g</span></div><div class="title">${esc(m.title)}</div></div>
+      <button class="btn ghost sm" data-recipe="${mi}">${state.recipes[m.title] ? 'Chiudi' : 'Preparazione'}</button></div>
+      <div class="foods">${m.items.map(i => h`<div class="food ${esc(i.category)}" data-sub="${mi}" data-item="${esc(i.name)}" title="Tocca per sostituire"><span class="swap">⇄</span><span class="emoji">${foodIcon(i.name, i.category)}</span><span class="name">${esc(i.name)}</span><span class="g">${i.grams} g</span></div>`).join('')}</div>
       ${state.recipes[m.title] ? renderRecipe(state.recipes[m.title]) : ''}</div>`;
   }).join('')}</div>
   ${plan.notes ? h`<p class="muted small">${esc(plan.notes)}</p>` : ''}
   <button class="btn secondary" id="regen">Rigenera tutta la settimana</button>`;
   view.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { state.planDay = +b.dataset.day; renderPlan(); });
-  view.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => substitute(state.planDay, +b.dataset.sub, b.dataset.item));
+  view.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { if (confirm(`Sostituire "${b.dataset.item}" con un'alternativa equivalente?`)) substitute(state.planDay, +b.dataset.sub, b.dataset.item); });
   view.querySelectorAll('[data-recipe]').forEach(b => b.onclick = () => recipeFor(+b.dataset.recipe));
   $('#regen').onclick = async () => { if (confirm('Rigenero il piano della settimana? Le sostituzioni fatte andranno perse.')) { await generateMealPlan(); renderPlan(); } };
 }
 
 function renderRecipe(r) {
-  return h`<div class="card" style="margin:10px 0 0;background:var(--bg)"><b>Preparazione</b> <span class="muted small">~${r.minutes} min</span><ol class="steps small">${r.steps.map(s => h`<li>${esc(s)}</li>`).join('')}</ol>${r.tips ? h`<p class="small muted">💡 ${esc(r.tips)}</p>` : ''}${r.mealPrep ? h`<p class="small muted">🥡 ${esc(r.mealPrep)}</p>` : ''}</div>`;
+  return h`<div class="card" style="margin:12px 0 0;background:var(--bg-2)"><h3>Preparazione <span style="text-transform:none;letter-spacing:0;color:var(--neon)">~${r.minutes} min</span></h3><ol class="steps small">${r.steps.map(s => h`<li>${esc(s)}</li>`).join('')}</ol>${r.tips ? h`<p class="small muted">💡 ${esc(r.tips)}</p>` : ''}${r.mealPrep ? h`<p class="small muted">🥡 ${esc(r.mealPrep)}</p>` : ''}</div>`;
 }
 
 async function recipeFor(mealIdx) {
@@ -338,13 +342,19 @@ function localRecipe(meal) {
 
 function renderTraining() {
   const pr = state.program;
-  view.innerHTML = h`<h1>Allenamento</h1>
-  <div class="card accent"><div class="row"><div><b>${esc(pr.splitLabel ?? pr.split)}</b><div class="muted small">${pr.daysPerWeek} giorni · ${pr.minutesPerSession} min · ${EQUIPMENT[pr.equipment].label}</div></div><div class="kpi"><div class="v">${pr.sessions.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets, 0), 0)}</div><div class="l">serie / sett.</div></div></div></div>
-  ${pr.sessions.map((s, si) => h`<div class="card"><div class="row"><h2>${esc(s.label)}</h2><span class="muted small">${DAYS[[0, [0], [0, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 4, 5], [0, 1, 2, 3, 4, 5]][pr.daysPerWeek][si]]}</span></div>
-    ${s.exercises.map(e => h`<div class="ex"><div><b>${esc(e.name)}</b></div><div class="scheme">${e.sets}×${e.repMin}-${e.repMax}</div><div class="sub">recupero ${e.restSec}s · <button data-swap="${si}" data-ex="${e.id}">sostituisci</button></div></div>`).join('')}</div>`).join('')}
+  view.innerHTML = h`<h1>Allenamento<em>.</em></h1><div class="stripe"></div>
+  <div class="card accent"><div class="row"><div><b style="font-size:18px">${esc(pr.splitLabel ?? pr.split)}</b><div class="muted small">${pr.daysPerWeek} giorni · ${pr.minutesPerSession} min · ${EQUIPMENT[pr.equipment].label}</div></div><div class="kpi"><div class="v neon-text" style="color:var(--neon)">${pr.sessions.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets, 0), 0)}</div><div class="l">serie / sett.</div></div></div></div>
+  <p class="muted small">Tocca un esercizio per vedere il movimento, i muscoli e l'esecuzione.</p>
+  ${pr.sessions.map((s, si) => h`<div class="card"><div class="session-head"><h2>${esc(s.label)}</h2><span class="day">${DAYS[[0, [0], [0, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 4, 5], [0, 1, 2, 3, 4, 5]][pr.daysPerWeek][si]]}</span></div>
+    ${s.exercises.map(e => h`<div class="ex" data-detail="${si}:${e.id}"><div class="thumb">${exerciseSVG(e.id)}</div><div class="name">${esc(e.name)}</div><div class="scheme">${e.sets}×${e.repMin}-${e.repMax}</div><div class="sub">${exerciseInfo(e).primary.slice(0, 2).join(', ')} · rec. ${e.restSec}s · <button data-swap="${si}" data-ex="${e.id}">sostituisci</button></div></div>`).join('')}</div>`).join('')}
   <div class="card"><h3>Progressione</h3><p class="small">${esc(pr.progression.text)}</p><p class="small muted">Scarico ogni ${pr.progression.deloadEveryWeeks} settimane. ${esc(pr.warmup)}</p></div>
   <div class="card"><h3>Adatta il programma</h3><p class="muted small">Infortuni, dolori, esercizi che non puoi fare: descrivili e il programma viene adattato.</p><textarea id="issues" rows="2" placeholder="es. dolore alla spalla destra, niente trazioni"></textarea><button class="btn secondary" id="adapt" style="margin-top:8px">Adatta</button></div>`;
-  view.querySelectorAll('[data-swap]').forEach(b => b.onclick = () => {
+  view.querySelectorAll('[data-detail]').forEach(el => el.onclick = () => {
+    const [si, id] = el.dataset.detail.split(':'); const e = state.program.sessions[+si].exercises.find(x => x.id === id);
+    showExercise(e);
+  });
+  view.querySelectorAll('[data-swap]').forEach(b => b.onclick = ev => {
+    ev.stopPropagation();
     const r = substituteExercise(state.program, +b.dataset.swap, b.dataset.ex);
     if (!r) return toast('Nessuna alternativa disponibile'); save('program'); renderTraining(); toast(`→ ${r.name}`);
   });
@@ -364,6 +374,17 @@ function renderTraining() {
   };
 }
 
+function showExercise(e) {
+  const info = exerciseInfo(e);
+  modal(h`<div class="slot" style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)">${e.sets} serie × ${e.repMin}-${e.repMax} rip · recupero ${e.restSec}s</div>
+  <h2 style="font-size:24px">${esc(e.name)}</h2>
+  <div class="move-stage">${exerciseSVG(e.id)}</div>
+  <h3>Muscoli</h3><div class="muscles">${info.primary.map(m => h`<span>${esc(m)}</span>`).join('')}${info.secondary.map(m => h`<span class="sec">${esc(m)}</span>`).join('')}</div>
+  <h3>Esecuzione</h3><ol class="steps">${info.steps.map(s => h`<li>${esc(s)}</li>`).join('')}</ol>
+  <h3>Errori comuni</h3><ul class="steps mistakes">${info.mistakes.map(s => h`<li>${esc(s)}</li>`).join('')}</ul>
+  <button class="btn secondary" onclick="this.closest('dialog').close()">Chiudi</button>`);
+}
+
 // ---------------------------------------------------------------------------
 // Vista: Spesa
 
@@ -371,9 +392,10 @@ function renderShopping() {
   const list = buildShoppingList(state.mealPlan, state.shopping.pantry);
   const checked = state.shopping.checked;
   const done = Object.values(list.aisles).flat().filter(i => checked[i.name]).length;
-  view.innerHTML = h`<div class="row"><h1>Spesa</h1><span class="muted small">${done}/${list.totalItems}</span></div>
+  const catOf = {}; state.mealPlan.days.forEach(d => d.meals.forEach(m => m.items.forEach(i => catOf[i.name] = i.category)));
+  view.innerHTML = h`<div class="row"><h1>Spesa<em>.</em></h1><span class="tag llm">${done}/${list.totalItems}</span></div><div class="stripe"></div>
   <p class="muted small">Quantità per 7 giorni, arrotondate alle confezioni. Spunta quello che hai già.</p>
-  <div class="card shop">${Object.entries(list.aisles).map(([aisle, items]) => h`<h3>${esc(aisle)}</h3>${items.map(i => h`<label class="${checked[i.name] ? 'done' : ''}"><input type="checkbox" data-item="${esc(i.name)}" ${checked[i.name] ? 'checked' : ''}>${esc(i.name)}<span class="q">${esc(i.display)}</span></label>`).join('')}`).join('')}</div>
+  <div class="card shop">${Object.entries(list.aisles).map(([aisle, items]) => h`<h3>${esc(aisle)}</h3>${items.map(i => h`<label class="item ${checked[i.name] ? 'done' : ''}"><input type="checkbox" data-item="${esc(i.name)}" ${checked[i.name] ? 'checked' : ''}><span class="em">${foodIcon(i.name, catOf[i.name])}</span>${esc(i.name)}<span class="q">${esc(i.display)}</span></label>`).join('')}`).join('')}</div>
   <div class="card"><h3>Già in dispensa</h3><p class="muted small">Alimenti da escludere sempre dalla lista (es. olio, spezie).</p><input id="pantry" value="${esc(state.shopping.pantry.join(', '))}" placeholder="es. Olio extravergine d'oliva"><button class="btn secondary sm" id="pantry-save" style="margin-top:8px">Salva</button></div>
   <div class="grid2"><button class="btn secondary" id="share">Condividi lista</button><button class="btn secondary" id="uncheck">Azzera spunte</button></div>`;
   view.querySelectorAll('input[data-item]').forEach(c => c.onchange = () => { checked[c.dataset.item] = c.checked; save('shopping'); c.parentElement.classList.toggle('done', c.checked); });
@@ -391,7 +413,7 @@ function renderShopping() {
 
 function renderProfile() {
   const p = state.profile, n = state.numbers, s = store.get('settings', {});
-  view.innerHTML = h`<h1>Profilo</h1>
+  view.innerHTML = h`<h1>Profilo<em>.</em></h1><div class="stripe"></div>
   <div class="card"><div class="grid3"><div class="kpi"><div class="v">${p.weightKg}</div><div class="l">kg</div></div><div class="kpi"><div class="v">${p.heightCm}</div><div class="l">cm</div></div><div class="kpi"><div class="v">${p.age}</div><div class="l">anni</div></div></div>
   <p class="muted small" style="margin-top:10px">${GOALS[p.goal].label} · ${ACTIVITY_FACTORS[p.activity].label} · ${p.mealsPerDay} pasti · ${p.allergies.length ? 'Allergie: ' + p.allergies.map(a => ALLERGY_LABELS[a]).join(', ') : 'Nessuna allergia'}</p>
   <p class="muted small">BMR ${n.bmr} · TDEE ${n.tdee} · Target ${n.target} kcal</p>

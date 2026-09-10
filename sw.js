@@ -1,7 +1,7 @@
 // sw.js — cache-first per gli asset dell'app, network-first per il backend.
-const CACHE = 'nutricoach-v1';
+const CACHE = 'nutricoach-v2';
 const ASSETS = ['./', './index.html', './ui.css', './app.js', './store.js', './api.js', './manifest.webmanifest', './icon.svg',
-  './engine/nutrition.js', './engine/training.js', './engine/foods.js', './engine/schemas.js', './engine/shopping.js'];
+  './engine/nutrition.js', './engine/training.js', './engine/foods.js', './engine/schemas.js', './engine/shopping.js', './engine/foodIcons.js', './engine/moves.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
