@@ -1,0 +1,13 @@
+name = "nutricoach-api"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# Secrets (wrangler secret put <NAME>):
+#   ANTHROPIC_API_KEY     obbligatoria
+#   SUPABASE_JWT_SECRET   per verificare i JWT degli utenti (Supabase → Settings → API → JWT Secret)
+#   DEV_TOKEN             opzionale, token statico per sviluppo locale
+
+# Rate limit per utente (crea il namespace: wrangler kv namespace create RATE)
+# [[kv_namespaces]]
+# binding = "RATE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxx"
